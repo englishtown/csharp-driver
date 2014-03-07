@@ -29,7 +29,7 @@ namespace Cassandra.Data
         IEnumerable<Row> enumRows = null;
         IEnumerator<Row> enumerRows = null;
         Dictionary<string, int> colidx = new Dictionary<string, int>();
-        internal CqlReader(RowSet rows)
+        public CqlReader(RowSet rows)
         {
             this.popul = rows;
             for (int idx = 0; idx < popul.Columns.Length; idx++)

@@ -30,7 +30,10 @@ namespace Cassandra.Data
         ConnectionState _connectionState = ConnectionState.Closed;
         CqlBatchTransaction _currentTransaction = null;
 
-        internal Session ManagedConnection = null;
+        /// <summary>
+        /// Gets the Cassandra client <see cref="Session"/> wrapped by the <see cref="CqlConnection"/>.
+        /// </summary>
+        internal protected Session ManagedConnection { get; private set; }
 
         public CqlConnection()
         {
@@ -121,7 +124,9 @@ namespace Cassandra.Data
             {
                 if (!_clusters.ContainsKey(_connectionStringBuilder.ClusterName))
                 {
-                    _managedCluster = _connectionStringBuilder.MakeClusterBuilder().Build();
+                    var builder = _connectionStringBuilder.MakeClusterBuilder();
+                    OnBuildingCluster(builder);
+                    _managedCluster = builder.Build();
                     _clusters.Add(_connectionStringBuilder.ClusterName, _managedCluster);
                 }
                 else
@@ -134,6 +139,14 @@ namespace Cassandra.Data
                 ManagedConnection = _managedCluster.Connect(_connectionStringBuilder.DefaultKeyspace);
 
             _connectionState = System.Data.ConnectionState.Open;
+        }
+
+        /// <summary>
+        /// To be overriden in child class to change default builder settings.
+        /// </summary>
+        /// <param name="builder">The <see cref="Builder"/> of <see cref="Cluster"/>.</param>
+        protected virtual void OnBuildingCluster(Builder builder)
+        {
         }
 
         public override string ServerVersion
