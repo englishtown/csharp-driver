@@ -15,7 +15,6 @@
 //
 ﻿using System;
 ﻿using System.Collections.Concurrent;
-﻿using System.Collections.Generic;
 ﻿using System.Data;
 using System.Data.Common;
 
@@ -70,8 +69,12 @@ namespace Cassandra.Data
         public override void Close()
         {
             _connectionState = System.Data.ConnectionState.Closed;
-            if (ManagedConnection != null)
-                ManagedConnection.Dispose();
+            if (_managedConnection != null)
+            {
+                _managedConnection.Dispose();
+                _managedConnection = null;
+            }
+            _managedCluster = null;
         }
 
         public override string ConnectionString
@@ -127,7 +130,7 @@ namespace Cassandra.Data
         {
         }
 
-        protected virtual Cluster CreateCluster(CassandraConnectionStringBuilder connectionStringBuilder)
+        protected Cluster CreateCluster(CassandraConnectionStringBuilder connectionStringBuilder)
         {
             Cluster cluster;
             if (!_clusters.TryGetValue(_connectionStringBuilder.ClusterName, out cluster))
@@ -141,6 +144,16 @@ namespace Cassandra.Data
             return cluster;
         }
 
+        protected Session CreatedSession(string keyspace)
+        {
+            if (_managedCluster == null)
+            {
+                return null;
+            }
+
+            return _managedCluster.Connect(keyspace ?? string.Empty);
+        }
+
         internal protected virtual Session ManagedConnection
         {
             get
@@ -150,16 +163,10 @@ namespace Cassandra.Data
                     return null;
                 }
 
-                if (_managedConnection == null)
-                {
-                    if (string.IsNullOrEmpty(_connectionStringBuilder.DefaultKeyspace))
-                        _managedConnection = _managedCluster.Connect("");
-                    else
-                        _managedConnection = _managedCluster.Connect(_connectionStringBuilder.DefaultKeyspace);
-                }
-
-                return _managedConnection;
+                return _managedConnection ??
+                    (_managedConnection = CreatedSession(_connectionStringBuilder.DefaultKeyspace));
             }
+            protected set { _managedConnection = value; }
         }
 
         public override string ServerVersion
