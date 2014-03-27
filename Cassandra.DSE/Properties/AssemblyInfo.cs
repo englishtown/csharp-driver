@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Cassandra.Data")]
-[assembly: AssemblyDescription("Datastax C# Ado.Net Driver for Apache Cassandra")]
+[assembly: AssemblyDescription("Datastax C# DSE Extensions for Apache Cassandra")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Datastax")]
 [assembly: AssemblyProduct("CassandraCSharpDriver")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("0da6f43a-d752-49b2-a0cf-e2f94d505b75")]
+[assembly: Guid("064f850a-21d3-4671-9e57-cb9b90db717c")]
 
 // Version information for an assembly consists of the following four values:
 //

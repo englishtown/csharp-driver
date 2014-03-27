@@ -159,7 +159,12 @@ namespace Cassandra.Data.Linq
             else if (obj is Single) return Encode((Single)obj);
             else if (obj is Decimal) return Encode((Decimal)obj);
             else if (obj is DateTimeOffset) return Encode((DateTimeOffset)obj);
-            else if (obj is DateTime) return Encode(new DateTimeOffset((DateTime)obj));
+            // need to treat "Unspecified" as UTC (+0) not the default behavior of DateTimeOffset which treats as Local Timezone
+            // because we are about to do math against EPOCH which must align with UTC. 
+            // If we don't, then the value saved will be shifted by the local timezone when retrieved back out as DateTime.
+            else if (obj is DateTime) return Encode(((DateTime)obj).Kind == DateTimeKind.Unspecified 
+                    ? new DateTimeOffset((DateTime)obj,TimeSpan.Zero) 
+                    : new DateTimeOffset((DateTime)obj));
             else if (obj.GetType().IsGenericType)
             {
                 if (obj.GetType().GetInterface("ISet`1") != null)
@@ -706,7 +711,7 @@ namespace Cassandra.Data.Linq
         internal static MethodInfo ThenByMi = typeof(CqlMthHelps).GetMethod("ThenBy", BindingFlags.NonPublic | BindingFlags.Static);
         internal static MethodInfo ThenByDescendingMi = typeof(CqlMthHelps).GetMethod("ThenByDescending", BindingFlags.NonPublic | BindingFlags.Static);
         internal static object Select(object a, object b) { return null; }
-        internal static object Where(object a, object b) { return null; }        
+        internal static object Where(object a, object b) { return null; }
         internal static object First(object a, int b) { return null; }
         internal static object FirstOrDefault(object a, int b) { return null; }
         internal static object Take(object a, int b) { return null; }
