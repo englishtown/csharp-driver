@@ -20,6 +20,9 @@ using System.Data.Common;
 
 namespace Cassandra.Data
 {
+    /// <summary>
+    /// Represents a CQL connection.
+    /// </summary>
     public class CqlConnection : DbConnection, ICloneable
     {
         private CassandraConnectionStringBuilder _connectionStringBuilder;
@@ -29,11 +32,18 @@ namespace Cassandra.Data
         private CqlBatchTransaction _currentTransaction;
         internal protected Session ManagedConnection;
 
+        /// <summary>
+        /// Initializes a <see cref="CqlConnection"/>.
+        /// </summary>
         public CqlConnection()
         {
             _connectionStringBuilder = new CassandraConnectionStringBuilder();
         }
 
+        /// <summary>
+        /// Initializes a <see cref="CqlConnection"/>.
+        /// </summary>
+        /// <param name="connectionString">The connection string.</param>
         public CqlConnection(string connectionString)
         {
             _connectionStringBuilder = new CassandraConnectionStringBuilder(connectionString);
@@ -130,7 +140,15 @@ namespace Cassandra.Data
         {
         }
 
-        protected Cluster CreateCluster(CassandraConnectionStringBuilder connectionStringBuilder)
+        /// <summary>
+        /// Creates a <see cref="Cluster"/>. By default <see cref="Cluster"/>s are created and cached
+        /// by cluster name specified in connection string.
+        /// 
+        /// To be overridden in child classes to change the default creation and caching behavior.
+        /// </summary>
+        /// <param name="connectionStringBuilder">The <see cref="CassandraConnectionStringBuilder"/>.</param>
+        /// <returns></returns>
+        protected virtual Cluster CreateCluster(CassandraConnectionStringBuilder connectionStringBuilder)
         {
             Cluster cluster;
             if (!_clusters.TryGetValue(_connectionStringBuilder.ClusterName, out cluster))
@@ -144,6 +162,13 @@ namespace Cassandra.Data
             return cluster;
         }
 
+        /// <summary>
+        /// Creates a <see cref="Session"/>.
+        /// 
+        /// To be overridden in child classes if want to cache the <see cref="Session"/> created.
+        /// </summary>
+        /// <param name="keyspace">The keyspace.</param>
+        /// <returns>Returns the created <see cref="Session"/>.</returns>
         protected virtual Session CreatedSession(string keyspace)
         {
             if (_managedCluster == null)
