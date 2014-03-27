@@ -25,9 +25,9 @@ namespace Cassandra.Data
         private CassandraConnectionStringBuilder _connectionStringBuilder;
         private readonly static ConcurrentDictionary<string, Cluster> _clusters = new ConcurrentDictionary<string, Cluster>();
         private Cluster _managedCluster;
-        private Session _managedConnection;
         private ConnectionState _connectionState = ConnectionState.Closed;
         private CqlBatchTransaction _currentTransaction;
+        internal protected Session ManagedConnection;
 
         public CqlConnection()
         {
@@ -69,10 +69,10 @@ namespace Cassandra.Data
         public override void Close()
         {
             _connectionState = System.Data.ConnectionState.Closed;
-            if (_managedConnection != null)
+            if (ManagedConnection != null)
             {
-                _managedConnection.Dispose();
-                _managedConnection = null;
+                ManagedConnection.Dispose();
+                ManagedConnection = null;
             }
             _managedCluster = null;
         }
@@ -113,7 +113,7 @@ namespace Cassandra.Data
         {
             _connectionState = System.Data.ConnectionState.Connecting;
             _managedCluster = CreateCluster(_connectionStringBuilder);
-
+            ManagedConnection = CreatedSession(_connectionStringBuilder.DefaultKeyspace);
             _connectionState = System.Data.ConnectionState.Open;
         }
 
@@ -144,7 +144,7 @@ namespace Cassandra.Data
             return cluster;
         }
 
-        protected Session CreatedSession(string keyspace)
+        protected virtual Session CreatedSession(string keyspace)
         {
             if (_managedCluster == null)
             {
@@ -154,19 +154,21 @@ namespace Cassandra.Data
             return _managedCluster.Connect(keyspace ?? string.Empty);
         }
 
-        internal protected virtual Session ManagedConnection
+        /// <summary>
+        /// To be called by CqlCommand to creates a <see cref="PreparedStatement"/>
+        /// from <see cref="ManagedConnection"/>.
+        /// 
+        /// To be overriden in child classes if want to cache the <see cref="PreparedStatement"/> created.
+        /// </summary>
+        /// <param name="cqlQuery">The CQL query string.</param>
+        /// <returns>Returns the created <see cref="PreparedStatement"/>.</returns>
+        internal protected virtual PreparedStatement CreatePreparedStatement(string cqlQuery)
         {
-            get
+            if (ManagedConnection == null)
             {
-                if (_managedCluster == null)
-                {
-                    return null;
-                }
-
-                return _managedConnection ??
-                    (_managedConnection = CreatedSession(_connectionStringBuilder.DefaultKeyspace));
+                return null;
             }
-            protected set { _managedConnection = value; }
+            return ManagedConnection.Prepare(cqlQuery);
         }
 
         public override string ServerVersion
