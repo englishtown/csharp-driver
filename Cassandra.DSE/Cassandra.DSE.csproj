@@ -1,16 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{EE00CE02-F1E6-4F7D-B43C-F6FADCE4C72B}</ProjectGuid>
+    <ProjectGuid>{63B858E0-A7A8-4849-9069-58CE6A18771B}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Cassandra.Data</RootNamespace>
-    <AssemblyName>Cassandra.Data</AssemblyName>
+    <RootNamespace>Cassandra.DSE</RootNamespace>
+    <AssemblyName>Cassandra.DSE</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -20,9 +21,9 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <DocumentationFile>
     </DocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -31,48 +32,31 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\Cassandra.Data.XML</DocumentationFile>
-  </PropertyGroup>
-  <PropertyGroup>
-    <SignAssembly>false</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyOriginatorKeyFile>
-    </AssemblyOriginatorKeyFile>
+    <DocumentationFile>bin\Release\Cassandra.DSE.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CqlBatchTransaction.cs" />
-    <Compile Include="CqlCommandBuilder.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="CqlDataAdapter.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="CqlCommand.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="CqlConnection.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="CqlParameter.cs" />
-    <Compile Include="CqlParameterCollection.cs" />
-    <Compile Include="CqlProviderFactory.cs" />
-    <Compile Include="CqlReader.cs" />
+    <Compile Include="DseAuthProvider.cs" />
+    <Compile Include="KerberosAuthenticator.SSPI.cs" />
+    <Compile Include="PlainTextAuthProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SASL.cs" />
+    <Compile Include="SSPI.cs" />
+    <Compile Include="WindowsAPI.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Cassandra\Cassandra.csproj">
-      <Project>{6E8C45DA-D958-4C75-98C3-B54C883299A2}</Project>
+      <Project>{6e8c45da-d958-4c75-98c3-b54c883299a2}</Project>
       <Name>Cassandra</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="README.rst" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -14,23 +14,20 @@
 //   limitations under the License.
 //
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Data;
+﻿using System.Collections.Concurrent;
+﻿using System.Data;
 using System.Data.Common;
-using Cassandra;
 
 namespace Cassandra.Data
 {
     public class CqlConnection : DbConnection, ICloneable
     {
-        CassandraConnectionStringBuilder _connectionStringBuilder = null;
-        static Dictionary<string, Cluster> _clusters = new Dictionary<string, Cluster>();
-        Cluster _managedCluster = null;
-        ConnectionState _connectionState = ConnectionState.Closed;
-        CqlBatchTransaction _currentTransaction = null;
-
-        internal Session ManagedConnection = null;
+        private CassandraConnectionStringBuilder _connectionStringBuilder;
+        private readonly static ConcurrentDictionary<string, Cluster> _clusters = new ConcurrentDictionary<string, Cluster>();
+        private Cluster _managedCluster;
+        private Session _managedConnection;
+        private ConnectionState _connectionState = ConnectionState.Closed;
+        private CqlBatchTransaction _currentTransaction;
 
         public CqlConnection()
         {
@@ -40,11 +37,6 @@ namespace Cassandra.Data
         public CqlConnection(string connectionString)
         {
             _connectionStringBuilder = new CassandraConnectionStringBuilder(connectionString);
-        }
-
-        private Dictionary<string, string> getCredentials(string auth)
-        {
-            return null;
         }
 
         internal void ClearDbTransaction()
@@ -69,7 +61,7 @@ namespace Cassandra.Data
 
         protected override void Dispose(bool disposing)
         {
-            if (_connectionState == ConnectionState.Open) 
+            if (_connectionState == ConnectionState.Open)
                 Close();
             base.Dispose(disposing);
         }
@@ -77,8 +69,12 @@ namespace Cassandra.Data
         public override void Close()
         {
             _connectionState = System.Data.ConnectionState.Closed;
-            if (ManagedConnection != null)
-                ManagedConnection.Dispose();
+            if (_managedConnection != null)
+            {
+                _managedConnection.Dispose();
+                _managedConnection = null;
+            }
+            _managedCluster = null;
         }
 
         public override string ConnectionString
@@ -116,24 +112,7 @@ namespace Cassandra.Data
         public override void Open()
         {
             _connectionState = System.Data.ConnectionState.Connecting;
-
-            lock (_clusters)
-            {
-                if (!_clusters.ContainsKey(_connectionStringBuilder.ClusterName))
-                {
-                    var builder = _connectionStringBuilder.MakeClusterBuilder();
-                    OnBuildingCluster(builder);
-                    _managedCluster = builder.Build();
-                    _clusters.Add(_connectionStringBuilder.ClusterName, _managedCluster);
-                }
-                else
-                    _managedCluster = _clusters[_connectionStringBuilder.ClusterName];
-            }
-
-            if (string.IsNullOrEmpty(_connectionStringBuilder.DefaultKeyspace))
-                ManagedConnection = _managedCluster.Connect("");
-            else
-                ManagedConnection = _managedCluster.Connect(_connectionStringBuilder.DefaultKeyspace);
+            _managedCluster = CreateCluster(_connectionStringBuilder);
 
             _connectionState = System.Data.ConnectionState.Open;
         }
@@ -149,6 +128,45 @@ namespace Cassandra.Data
         /// <param name="builder">The <see cref="Builder"/> for building a <see cref="Cluster"/>.</param>
         protected virtual void OnBuildingCluster(Builder builder)
         {
+        }
+
+        protected Cluster CreateCluster(CassandraConnectionStringBuilder connectionStringBuilder)
+        {
+            Cluster cluster;
+            if (!_clusters.TryGetValue(_connectionStringBuilder.ClusterName, out cluster))
+            {
+                var builder = _connectionStringBuilder.MakeClusterBuilder();
+                OnBuildingCluster(builder);
+                cluster = builder.Build();
+                _clusters.TryAdd(_connectionStringBuilder.ClusterName, cluster);
+            }
+
+            return cluster;
+        }
+
+        protected Session CreatedSession(string keyspace)
+        {
+            if (_managedCluster == null)
+            {
+                return null;
+            }
+
+            return _managedCluster.Connect(keyspace ?? string.Empty);
+        }
+
+        internal protected virtual Session ManagedConnection
+        {
+            get
+            {
+                if (_managedCluster == null)
+                {
+                    return null;
+                }
+
+                return _managedConnection ??
+                    (_managedConnection = CreatedSession(_connectionStringBuilder.DefaultKeyspace));
+            }
+            protected set { _managedConnection = value; }
         }
 
         public override string ServerVersion
