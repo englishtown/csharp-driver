@@ -17,7 +17,6 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Collections.Concurrent;
-using System.Threading;
 
 namespace Cassandra
 {
@@ -55,8 +54,8 @@ namespace Cassandra
         private string _datacenter;
         private string _rack;
 
-        private volatile bool _isUpNow = true;
-        private DateTimeOffset _nextUpTime;
+        private bool _isUpNow = true;
+        private DateTime _nextUpTime;
         readonly IReconnectionPolicy _reconnectionPolicy;
         private IReconnectionSchedule _reconnectionSchedule;
 
@@ -69,17 +68,14 @@ namespace Cassandra
         {
             get
             {
-                return _isUpNow || (_nextUpTime <= DateTimeOffset.Now);
+                return _isUpNow || _nextUpTime <= DateTime.Now;
             }
         }
 
         public bool SetDown()
         {
             if (IsConsiderablyUp)
-            {
-                Thread.MemoryBarrier();
-                _nextUpTime = DateTimeOffset.Now.AddMilliseconds(_reconnectionSchedule.NextDelayMs());
-            }
+                _nextUpTime = DateTime.Now.AddMilliseconds(_reconnectionSchedule.NextDelayMs());
             if (_isUpNow)
             {
                 _isUpNow = false;
@@ -90,9 +86,9 @@ namespace Cassandra
 
         public bool BringUpIfDown()
         {
+            _reconnectionSchedule = _reconnectionPolicy.NewSchedule();
             if (!_isUpNow)
             {
-                Interlocked.Exchange(ref _reconnectionSchedule, _reconnectionPolicy.NewSchedule());
                 _isUpNow = true;
                 return true;
             }
